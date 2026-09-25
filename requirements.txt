@@ -1,0 +1,43 @@
+fastapi>=0.110
+uvicorn[standard]>=0.27
+httpx>=0.27
+psutil>=5.9
+cryptography>=42.0
+pywebview>=5.0
+pythonnet>=3.0.3 ; sys_platform == "win32"
+
+# Reading Codex's config.toml on Python 3.10 (3.11+ ships tomllib)
+tomli>=2.0 ; python_version < "3.11"
+
+# File uploads
+python-multipart>=0.0.9
+
+# Reading what you attach
+pypdf>=4.0
+python-docx>=1.1
+openpyxl>=3.1
+
+# Computer use
+pillow>=10.0
+pyautogui>=0.9.54
+
+# Browser use. The Chromium download is separate:
+#   python -m playwright install chromium
+# run.bat does it for you on first setup. Not needed if you only ever attach to
+# your own Chrome over the debugging port.
+playwright>=1.40
+
+# v2 Studio fallbacks - both optional; AEGIS skips a fallback whose library is missing.
+#   imageio-ffmpeg : bundles ffmpeg for the "slideshow" video fallback
+#   pyttsx3        : Windows' own offline voices for speech
+imageio-ffmpeg>=0.5
+pyttsx3>=2.90 ; sys_platform == "win32"
+# Optional, not installed by default (Hugging Face Space backends in the Studio):
+#   pip install gradio_client
+# Optional offline voice transcription (the 🎤 falls back to it if no free cloud Whisper answers):
+#   pip install faster-whisper
+
+# v2.2 Needle: offline fast commands (~30 MB engine + weights, fetched from
+# Hugging Face on first use, then offline). AEGIS runs fine without it.
+# Pinned: 3.0.5 wants engine 3.0.2, which is not on Hugging Face yet (404).
+cactus-needle==3.0.4
