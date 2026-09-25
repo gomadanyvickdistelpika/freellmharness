@@ -1,0 +1,55 @@
+name: Bug report
+description: Something broke or didn't work as the README says
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for testing AEGIS! Please **never paste API keys** or personal details here.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open the Providers tab
+        2. Paste a Groq key and click "Save keys and build my Auto route"
+        3. ...
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where did it happen?
+      options:
+        - Setup (AEGIS-SETUP.bat / run.bat)
+        - Chat
+        - Providers / routes
+        - Me (About me)
+        - Agents / Skills
+        - Studio (images, music, video)
+        - Browser / computer use
+        - Tasks / scheduling
+        - Something else
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version and PC
+      placeholder: "Windows 11, 16 GB RAM, no GPU"
+  - type: input
+    id: provider
+    attributes:
+      label: Model provider in use (if any)
+      placeholder: "Gemini free / Groq / Ollama qwen3:4b"
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots
+      description: Paste the end of aegis-setup.log or %LOCALAPPDATA%\Aegis\logs\startup.log. Check it contains no keys first.
+      render: text
