@@ -1,0 +1,43 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      PYTHONUTF8: "1"
+      NEEDLE_TELEMETRY: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m playwright install chromium
+          # Needle's real engine is downloaded from Hugging Face on first use;
+          # CI tests Needle's gates with a scripted engine instead.
+          python -m pip uninstall -y cactus-needle
+      - name: Run every test suite
+        shell: pwsh
+        run: |
+          $failed = @()
+          Get-ChildItem tests\test_*.py | ForEach-Object {
+            Write-Host "=== $($_.Name) ==="
+            $env:AEGIS_DATA_DIR = Join-Path $env:RUNNER_TEMP ("aegis-" + $_.BaseName)
+            python -u $_.FullName
+            if ($LASTEXITCODE -ne 0) { $failed += $_.Name }
+          }
+          if ($failed.Count) { Write-Error "Failed: $($failed -join ', ')"; exit 1 }
