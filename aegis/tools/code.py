@@ -130,7 +130,11 @@ async def run_command(command: str = "", cwd: str = "", timeout: int = 0,
     folder = _resolve_cwd(cwd)
     limit = max(5, min(int(timeout or DEFAULT_TIMEOUT), MAX_TIMEOUT))
     if sys.platform == "win32":
-        argv = ["powershell.exe", "-NoLogo", "-NoProfile", "-NonInteractive",
+        # PowerShell 7 (pwsh) understands `a && b`; Windows PowerShell 5.1
+        # rejects it as a parse error, so prefer pwsh when it is installed.
+        import shutil
+        shell = "pwsh.exe" if shutil.which("pwsh") else "powershell.exe"
+        argv = [shell, "-NoLogo", "-NoProfile", "-NonInteractive",
                 "-ExecutionPolicy", "Bypass", "-Command",
                 "[Console]::OutputEncoding=[Text.Encoding]::UTF8; " + command]
     else:
