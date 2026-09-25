@@ -1,0 +1,12 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+# Logs written next to the setup scripts
+*.log
+# Never commit secrets or personal data
+.env
+*.key
+vault.bin
+settings.json
+aegis/personal_local/
