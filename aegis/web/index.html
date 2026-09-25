@@ -1,0 +1,845 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AEGIS</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<header>
+  <div class="brand">AEGIS<span id="version"></span></div>
+  <nav>
+    <button data-tab="chat" class="active">Chat</button>
+    <button data-tab="projects">Projects</button>
+    <button data-tab="studio">Studio</button>
+    <button data-tab="agentsmcp">Agents</button>
+    <button data-tab="me">Me</button>
+    <button data-tab="models">Models</button>
+    <button data-tab="browser">Browser</button>
+    <button data-tab="tools">Tools</button>
+    <button data-tab="brain">Skills</button>
+    <button data-tab="filetasks">Tasks</button>
+    <button data-tab="providers">Providers</button>
+    <button data-tab="settings">Settings</button>
+  </nav>
+  <div class="hw-chip" id="hwchip"></div>
+</header>
+
+<main>
+
+  <!-- ------------------------------------------------------------ CHAT -->
+  <section class="pane active" id="chat">
+   <div class="chat-layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="side-top">
+        <button class="primary sm" id="newChat">New chat</button>
+        <button class="ghost sm" id="collapseSide" title="Hide the list">‹</button>
+      </div>
+      <input type="text" id="chatSearch" placeholder="Search all chats…">
+      <div class="chat-list" id="chatList"></div>
+      <div class="side-foot" id="storeStats"></div>
+    </aside>
+
+    <div class="chat-main">
+    <div class="chat-bar">
+      <select id="projectSelect" title="Project — its instructions, notes and workspace apply to this chat"></select>
+      <select id="agentSelect" title="Agent — run this chat as one of your agents"></select>
+      <select id="routeSelect" title="Route — an ordered list of models with failover"></select>
+      <select id="providerSelect" title="Provider"></select>
+      <select id="modelSelect" title="Model"></select>
+      <select id="boostSelect" title="Boost: plan + second-model review for hard tasks">
+        <option value="">Boost: auto</option>
+        <option value="always">Boost: on</option>
+        <option value="off">Boost: off</option>
+      </select>
+      <button class="ghost sm" id="speakToggle" title="Read replies aloud">🔈</button>
+      <button class="ghost sm" id="browserToggle" title="Show the agent's browser beside the chat">🌐 Browser</button>
+      <label class="switch" title="Let the model call MCP and computer-use tools">
+        <input type="checkbox" id="useTools" checked> Tools
+        <span class="pill" id="toolCount">0</span>
+      </label>
+      <div class="spacer"></div>
+      <span class="pill" id="chatTitle" title="Click to rename"></span>
+      <button class="ghost sm" id="pinChat" title="Pin to the top of the list">☆</button>
+      <button class="ghost sm" id="exportChat" title="Export as Markdown">Export</button>
+      <button class="ghost sm danger" id="deleteChat" title="Delete this chat">Delete</button>
+    </div>
+    <div class="messages" id="messages">
+      <div class="empty">Pick a provider and say something.</div>
+    </div>
+    <div class="composer">
+      <div class="slash-menu" id="slashMenu" hidden></div>
+      <div class="files-pop card" id="filesPop" hidden></div>
+      <div class="attach-row" id="attachRow" hidden></div>
+      <div class="inner">
+        <input type="file" id="fileInput" multiple hidden>
+        <button class="ghost" id="attachBtn" title="Attach any file (it is also saved to the workspace)">＋</button>
+        <button class="ghost" id="filesBtn" title="Workspace files — download what the agent made">📁</button>
+        <button class="ghost" id="micBtn" title="Voice prompt: click to talk, click again to stop (right-click: hands-free voice mode)">🎤</button>
+        <textarea id="input" rows="1" placeholder="Message · / for commands · 🎤 to talk"></textarea>
+        <button class="primary" id="send">Send</button>
+        <button class="danger" id="stop" hidden>Stop</button>
+      </div>
+    </div>
+    </div>
+    <aside class="dock" id="dock" hidden>
+      <div class="dock-bar">
+        <button class="sm ghost" id="dkBack" title="Back">←</button>
+        <button class="sm ghost" id="dkReload" title="Reload">⟳</button>
+        <input type="text" id="dkUrl" placeholder="address" spellcheck="false">
+        <button class="sm primary" id="dkGo">Go</button>
+        <button class="sm ghost" id="dkClose" title="Hide">✕</button>
+      </div>
+      <div class="dock-bar">
+        <button class="sm" id="dkTake">Take over</button>
+        <span class="hint" id="dkState">Agent can use the browser</span>
+      </div>
+      <div class="dock-view" id="dkViewBox">
+        <img id="dkView" alt="Live browser view — click to interact">
+        <div class="empty" id="dkBlank">No page open yet.</div>
+      </div>
+      <div class="dock-bar">
+        <input type="text" id="dkType" placeholder="Type into the page (Enter sends)…" spellcheck="false">
+        <button class="sm ghost" id="dkUp" title="Scroll up">▲</button>
+        <button class="sm ghost" id="dkDown" title="Scroll down">▼</button>
+      </div>
+    </aside>
+   </div>
+  </section>
+
+  <!-- -------------------------------------------------------- PROJECTS -->
+  <section class="pane" id="projects">
+    <div class="wrap">
+      <h2>Projects</h2>
+      <p class="sub">A project keeps chats, standing instructions, a workspace
+        folder and living notes (<span class="pill mono">PROJECT.md</span>)
+        together. Every chat in it starts knowing the goal, the decisions made
+        so far and the files in <span class="pill mono">knowledge/</span>.</p>
+      <div id="projectList" class="section"></div>
+
+      <h2 id="projFormTitle">New project</h2>
+      <div class="card section">
+        <input type="hidden" id="projKey">
+        <div class="grid2">
+          <div class="field"><label>Name</label>
+            <input type="text" id="projName" placeholder="e.g. Job hunt EMEA"></div>
+          <div class="field"><label>Route (optional)</label>
+            <select id="projRoute"></select></div>
+        </div>
+        <div class="field"><label>Goal, in one line</label>
+          <input type="text" id="projDesc" placeholder="Land a remote Senior TSE role by December"></div>
+        <div class="field"><label>Instructions for every chat in this project</label>
+          <textarea id="projInstr" rows="5" placeholder="Tone, rules, what to always check, output format…"></textarea></div>
+        <div class="grid2">
+          <div class="field"><label>Workspace folder (optional)</label>
+            <input type="text" id="projFolder" placeholder="Leave blank for AEGIS's own, or e.g. C:\Users\you\Documents\my-repo">
+            <div class="hint">Code, files and generated media for this project go here.</div></div>
+          <div class="field"><label>Specialists to always load</label>
+            <select id="projSkills" multiple size="5"></select>
+            <div class="hint">Ctrl-click for several. The Super Agent adds others per message.</div></div>
+        </div>
+        <div class="field row-inline">
+          <button class="primary" id="projSave">Create project</button>
+          <button class="ghost" id="projCancel" hidden>Cancel edit</button>
+        </div>
+      </div>
+
+      <div id="projNotesBox" hidden>
+        <h2>Project notes — <span id="projNotesName"></span></h2>
+        <div class="card section">
+          <textarea id="projNotes" rows="14" class="mono"></textarea>
+          <div class="field row-inline" style="margin-top:.6rem">
+            <button class="primary sm" id="projNotesSave">Save notes</button>
+            <span class="hint">The agent reads this at the start of every chat in the project and may update it.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------------------------------------------------------- STUDIO -->
+  <section class="pane" id="studio">
+    <div class="wrap wide">
+      <h2>Studio</h2>
+      <p class="sub">Images, voice, music and video — free backends first, each
+        one stepping aside when it is out of credit, exactly like the chat
+        routes. You can also just ask in chat: "make a thumbnail for…".</p>
+      <div class="card section studio-form">
+        <div class="seg" id="studioKind">
+          <button data-kind="image" class="on">Image</button>
+          <button data-kind="speech">Voice</button>
+          <button data-kind="music">Music</button>
+          <button data-kind="video">Video</button>
+        </div>
+        <textarea id="studioPrompt" rows="3" placeholder="Describe what to make…"></textarea>
+        <div class="row-inline studio-opts">
+          <span data-for="image"><select id="studioSize">
+            <option value="1024x1024">Square 1024</option>
+            <option value="1280x720">Thumbnail 16:9</option>
+            <option value="768x1344">Portrait 9:16</option>
+            <option value="1536x640">Banner</option></select></span>
+          <span data-for="image"><select id="studioCount">
+            <option value="1">1 image</option><option value="2">2</option><option value="4">4</option></select></span>
+          <span data-for="speech" hidden><input type="text" id="studioVoice" placeholder="voice e.g. nova, alloy, or a Windows voice"></span>
+          <span data-for="music" hidden><input type="number" id="studioDuration" placeholder="seconds" min="5" max="240" style="max-width:7rem"></span>
+          <span data-for="video" hidden><input type="text" id="studioNarration" placeholder="optional narration (voice-over)"></span>
+          <select id="studioProject" title="Save into a project workspace too"></select>
+          <button class="primary" id="studioGo">Generate</button>
+        </div>
+        <textarea id="studioLyrics" rows="4" data-for="music" hidden placeholder="Lyrics (optional)"></textarea>
+        <div class="hint" id="studioNote"></div>
+      </div>
+      <div class="gallery" id="studioGallery"></div>
+
+      <h2>Backends</h2>
+      <p class="sub">Tried top to bottom for each kind. A backend bound to a
+        provider uses that provider's saved key. Paid ones are skipped unless
+        you allow them below.</p>
+      <div class="card section">
+        <label class="check"><input type="checkbox" id="studioPaid"> Studio may use paid backends</label>
+        <button class="sm" id="studioRevive">Try resting backends again</button>
+        <button class="sm ghost" id="studioReset">Restore defaults</button>
+      </div>
+      <div id="studioBackends" class="section"></div>
+      <details class="card section"><summary>Edit backends as JSON (advanced)</summary>
+        <textarea id="studioJson" rows="16" class="mono"></textarea>
+        <div class="hint">Methods: pollinations_image, openai_image, chat_image,
+          openai_speech, openai_video, http_post, gradio, local_tts, slideshow,
+          suno_pack. Fields: id, kind, label, method, provider, model, enabled,
+          paid, voice, path, body, space, api_name, args.</div>
+        <button class="sm primary" id="studioJsonSave" style="margin-top:.5rem">Save JSON</button>
+      </details>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------------ AGENTS & MCP -->
+  <section class="pane" id="agentsmcp">
+    <div class="wrap">
+      <h2>My agents</h2>
+      <p class="sub">Saved ways of working. Pick one in the chat bar, name it in a
+        scheduled task, or let the Super Agent hand work to it. You can also just
+        say "make me an agent that…".</p>
+      <div id="agentList" class="section"></div>
+      <div class="card section">
+        <div class="field"><label>Add a ready-made agent</label>
+          <div class="row-inline" id="agentPresets"></div></div>
+      </div>
+
+      <h2 id="agFormTitle">New agent</h2>
+      <div class="card section">
+        <input type="hidden" id="agKey">
+        <div class="grid2">
+          <div class="field"><label>Name</label><input type="text" id="agName" placeholder="e.g. LinkedIn Writer"></div>
+          <div class="field"><label>Icon (emoji, optional)</label><input type="text" id="agIcon" maxlength="4"></div>
+        </div>
+        <div class="field"><label>What it is for</label><input type="text" id="agDesc"></div>
+        <div class="field"><label>Instructions — how it should work</label>
+          <textarea id="agInstr" rows="7" placeholder="1. Always… 2. Never… Output format…"></textarea></div>
+        <div class="grid2">
+          <div class="field"><label>Skills to always load</label>
+            <select id="agSkills" multiple size="6"></select></div>
+          <div class="field"><label>Tools it may use (none ticked = all)</label>
+            <div id="agTools" class="tool-checks"></div></div>
+        </div>
+        <div class="grid2">
+          <div class="field"><label>Route</label><select id="agRoute"></select></div>
+          <div class="field"><label>Boost</label><select id="agBoost">
+            <option value="auto">auto</option><option value="always">always</option><option value="off">off</option></select></div>
+        </div>
+        <div class="field row-inline">
+          <button class="primary" id="agSave">Create agent</button>
+          <button class="ghost" id="agCancel" hidden>Cancel edit</button>
+        </div>
+      </div>
+
+      <h2>MCP catalogue — one-click connectors</h2>
+      <p class="sub">Well-known MCP servers with their exact commands. Install adds
+        it to AEGIS and connects it; its tools show up in the next message.
+        <span id="mcpPrereq"></span></p>
+      <div id="mcpCatalog" class="section mcp-grid"></div>
+
+      <h2>File changes (undo)</h2>
+      <p class="sub">Every file the agent writes or edits is checkpointed first.
+        Restore any of them here.</p>
+      <div id="checkpointList" class="section"></div>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------------------ ABOUT ME -->
+  <section class="pane" id="me">
+    <div class="wrap">
+      <h2>What AEGIS knows about you</h2>
+      <p class="sub">Stored on this PC only, as editable notes.
+        <span class="badge green">public</span> goes into every prompt ·
+        <span class="badge amber">personal</span> is looked up when a task needs it
+        (CVs, job search) · <span class="badge red">private</span> (family, health,
+        money) goes to local models freely, but a cloud model has to ask you first.</p>
+      <div class="me-layout">
+        <div id="meList" class="me-list"></div>
+        <div class="card me-edit">
+          <div class="row-inline">
+            <input type="text" id="meName" placeholder="file name, e.g. goals-2027">
+            <button class="sm primary" id="meSave">Save</button>
+            <button class="sm danger" id="meDel">Delete</button>
+          </div>
+          <textarea id="meText" rows="24" class="mono" placeholder="---
+title: My goals for 2027
+tier: private
+topics: goals, plans
+---
+Write anything AEGIS should know…"></textarea>
+          <div class="hint">Keep the header: <code>tier</code> is public, personal or
+            private; <code>topics</code> are the words that find it.</div>
+          <button class="sm ghost" id="meRestore" style="margin-top:.5rem">Restore the original notes</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------------------------------------------------------- MODELS -->
+  <section class="pane" id="models">
+    <div class="wrap">
+      <h2>Models</h2>
+      <p class="sub">Everything installed on this machine, plus anything you can pull.
+        Each card is checked against your actual hardware before you download it.</p>
+
+      <div class="toolbar">
+        <input type="text" id="hfSearch"
+               placeholder="Search Hugging Face for GGUF models — e.g. qwen2.5 coder">
+        <button id="hfSearchBtn">Search</button>
+        <button class="ghost" id="refreshModels">Refresh</button>
+      </div>
+
+      <div id="downloadsBox" class="section" hidden>
+        <h2>Downloads</h2>
+        <div id="downloadList"></div>
+        <button class="ghost sm" id="clearDownloads">Clear finished</button>
+      </div>
+
+      <div id="searchResults" class="section" hidden>
+        <h2>Search results</h2>
+        <div id="searchList"></div>
+      </div>
+
+      <div class="section">
+        <h2 id="listHeading">Installed and available</h2>
+        <div id="modelList"><div class="empty"><span class="spinner"></span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ----------------------------------------------------- TOOLS & MCP -->
+  <!-- --------------------------------------------------------- BROWSER -->
+  <section class="pane" id="browser">
+    <div class="wrap">
+      <h2>Browser</h2>
+      <p class="sub">AEGIS's own Chromium, with its own logins, separate from
+        your Chrome. You and any agent share this one session — so you can sign
+        in here and it carries straight on. The real window is open beside
+        AEGIS if you'd rather use the mouse.</p>
+
+      <div class="card section">
+        <div class="row-inline">
+          <button class="sm ghost" id="brBack" title="Back">←</button>
+          <button class="sm ghost" id="brForward" title="Forward">→</button>
+          <button class="sm ghost" id="brReload" title="Reload">⟳</button>
+          <input type="text" id="brUrl" placeholder="linkedin.com/jobs"
+                 autocomplete="off" spellcheck="false">
+          <button class="sm primary" id="brGo">Go</button>
+        </div>
+        <div class="row-inline" style="margin-top:.5rem">
+          <span class="badge" id="brMode">not started</span>
+          <span class="card-sub mono" id="brCurrent" style="min-width:0"></span>
+          <label class="check" style="white-space:nowrap;margin-left:auto">
+            <input type="checkbox" id="brLive" checked> live view</label>
+        </div>
+      </div>
+
+      <div class="card section" id="brViewCard">
+        <img id="brView" alt="The page AEGIS is on"
+             style="width:100%;border-radius:8px;display:none">
+        <div class="empty" id="brBlank">Nothing open yet. Type an address above,
+          or just ask in chat — an agent browses here by default.</div>
+      </div>
+
+      <h2>On this page</h2>
+      <p class="sub">The same numbered elements an agent sees. Click one here
+        and it does exactly what the agent would do.</p>
+      <div id="brElements" class="section"></div>
+
+      <h2>Page text</h2>
+      <div class="card section"><pre id="brText" class="mono"
+        style="white-space:pre-wrap;margin:0;max-height:22rem;overflow:auto"></pre></div>
+    </div>
+  </section>
+
+  <section class="pane" id="tools">
+    <div class="wrap">
+      <h2>Tools &amp; MCP</h2>
+      <p class="sub">Every tool the model can reach, and the rules it operates
+        under. Nothing connects until you enable it.</p>
+
+      <h2>Approvals</h2>
+      <div class="card">
+        <div class="field">
+          <label for="toolPolicy">When the model wants to call a tool</label>
+          <select id="toolPolicy">
+            <option value="auto_read_ask_write">Run reads automatically, ask before writes</option>
+            <option value="ask_always">Ask every single time</option>
+            <option value="auto_all">Run everything without asking</option>
+            <option value="per_server">Decide per server</option>
+          </select>
+          <div class="hint">A tool AEGIS cannot confidently classify as read-only
+            counts as a write. Unknown means ask.</div>
+        </div>
+        <div class="field">
+          <div class="row-inline">
+            <button class="sm danger" id="forgetDecisions">Forget remembered answers</button>
+            <span class="pill" id="decisionCount">0 remembered</span>
+          </div>
+        </div>
+      </div>
+
+      <h2>Computer use</h2>
+      <div class="card" id="computerBox"></div>
+
+      <h2>Browser use</h2>
+      <div class="card" id="browserBox"></div>
+
+      <h2>Connected servers</h2>
+      <div id="mcpServers"><div class="empty">None configured yet.</div></div>
+
+      <h2>Found on this machine</h2>
+      <p class="sub">Read from Codex, Claude Desktop, VS Code and Cursor configs.
+        Tick what you want, import it, then enable it.</p>
+      <div class="toolbar">
+        <button id="rescanMcp">Rescan</button>
+        <button class="primary" id="importMcp">Import selected</button>
+      </div>
+      <div id="mcpDiscovered"><div class="empty"><span class="spinner"></span></div></div>
+
+      <h2>Add a server by hand</h2>
+      <div class="card">
+        <div class="field">
+          <label>Name</label>
+          <input type="text" id="addName" placeholder="e.g. filesystem">
+        </div>
+        <div class="field">
+          <label>Command, or a URL for a remote server</label>
+          <input type="text" id="addCommand" placeholder="npx   —   or   https://example.com/mcp">
+        </div>
+        <div class="field">
+          <label>Arguments (one per line, stdio only)</label>
+          <textarea id="addArgs" rows="3" placeholder="-y&#10;@modelcontextprotocol/server-filesystem&#10;C:\Users\you\Documents"></textarea>
+        </div>
+        <div class="field">
+          <label>Environment (KEY=value, one per line)</label>
+          <textarea id="addEnv" rows="2" placeholder="API_TOKEN=..."></textarea>
+        </div>
+        <div class="field"><button class="primary" id="addServer">Add server</button></div>
+      </div>
+
+      <h2>Tool catalogue</h2>
+      <div id="toolCatalogue"><div class="empty">No servers connected.</div></div>
+    </div>
+  </section>
+
+  <!-- --------------------------------------------------- SKILLS & MEMORY -->
+  <section class="pane" id="brain">
+    <div class="wrap">
+      <h2>Skills</h2>
+      <p class="sub">Folders of instructions the agent pulls in when they apply.
+        Only the descriptions go into the prompt; the agent loads the full text
+        when it decides one is relevant.</p>
+
+      <div id="pendingSkills"></div>
+      <div id="skillList"><div class="empty"><span class="spinner"></span></div></div>
+
+      <h2>Agent roles</h2>
+      <p class="sub">Each skill doubles as a role a subagent can be spawned into,
+        with its own fresh context. One level deep — a subagent cannot spawn another.</p>
+      <div class="card" id="agentBox"></div>
+
+      <h2>Second Brain — your vault</h2>
+      <p class="sub">Indexed read-only for search. AEGIS has no function that
+        writes to your vault.</p>
+      <div class="card">
+        <div class="field">
+          <label for="vaultPath">Obsidian vault folder</label>
+          <div class="row-inline">
+            <input type="text" id="vaultPath"
+                   placeholder="C:\Users\you\Documents\My Notes">
+            <button class="sm" id="saveVault">Save</button>
+            <button class="sm primary" id="reindexVault">Reindex</button>
+          </div>
+          <div class="hint" id="vaultStats"></div>
+        </div>
+      </div>
+
+      <h2>Agent memory</h2>
+      <p class="sub">Durable facts the agent has saved across conversations.
+        Editable and deletable — it is your memory, not a black box.</p>
+      <div class="toolbar">
+        <input type="text" id="memorySearch" placeholder="Search memory…">
+        <button id="memoryRefresh">Refresh</button>
+      </div>
+      <div class="card">
+        <div class="field">
+          <label for="memoryNew">Add one yourself</label>
+          <div class="row-inline">
+            <input type="text" id="memoryNew" placeholder="Something worth remembering">
+            <input type="text" id="memoryTags" placeholder="tags" style="max-width:9rem">
+            <button class="sm" id="memoryAdd">Save</button>
+          </div>
+        </div>
+      </div>
+      <div id="memoryList"></div>
+    </div>
+  </section>
+
+  <!-- ----------------------------------------------------- FILES & TASKS -->
+  <section class="pane" id="filetasks">
+    <div class="wrap">
+      <h2>Folders</h2>
+      <p class="sub">Connect a folder and the agent can list, read and search
+        inside it. Writing asks first. Nothing outside a connected folder is
+        reachable — connect none and it has no filesystem at all.</p>
+      <div class="card">
+        <div class="field">
+          <label for="folderPath">Folder path</label>
+          <div class="row-inline">
+            <input type="text" id="folderPath"
+                   placeholder="C:\Users\you\Documents\Research">
+            <button class="sm primary" id="addFolder">Connect</button>
+          </div>
+        </div>
+      </div>
+      <div id="folderList" class="section"></div>
+
+      <h2>Attachments</h2>
+      <p class="sub">Files you attach to a chat. Small ones go into the message;
+        big ones are indexed and searched on demand, so a 300-page PDF costs a
+        search rather than the whole context window.</p>
+      <div id="attachStats" class="card section"></div>
+
+      <h2>Scheduled tasks</h2>
+      <p class="sub">A prompt that runs on a schedule. Each run gets its own chat
+        and a dated Markdown file.</p>
+      <div id="taskList" class="section"></div>
+
+      <div class="card section">
+        <div class="field">
+          <label for="taskName">Name</label>
+          <input type="text" id="taskName" placeholder="Daily job search">
+        </div>
+        <div class="field">
+          <label for="taskPrompt">What it should do each time</label>
+          <textarea id="taskPrompt" rows="4"
+            placeholder="Search for roles matching my About me job-search rules posted in the last 24 hours and write up the three best with why they fit."></textarea>
+        </div>
+        <div class="field">
+          <label for="taskCron">When</label>
+          <div class="row-inline">
+            <select id="taskPreset" style="max-width:13rem">
+              <option value="0 8 * * 1-5">Weekdays at 08:00</option>
+              <option value="30 7 * * 1-5">Weekdays at 07:30</option>
+              <option value="0 8 * * *">Every day at 08:00</option>
+              <option value="0 18 * * 5">Fridays at 18:00</option>
+              <option value="0 */4 * * *">Every 4 hours</option>
+              <option value="">Custom…</option>
+            </select>
+            <input type="text" id="taskCron" value="0 8 * * 1-5"
+                   placeholder="minute hour day month weekday">
+          </div>
+          <div class="hint" id="cronPreview"></div>
+        </div>
+        <div class="field">
+          <label for="taskProvider">Run with</label>
+          <select id="taskProvider"></select>
+        </div>
+        <div class="grid2">
+          <div class="field"><label for="taskAgent">As agent</label>
+            <select id="taskAgent"></select></div>
+          <div class="field"><label for="taskProject">In project</label>
+            <select id="taskProject"></select></div>
+        </div>
+        <div class="field">
+          <label for="taskOutput">Save the Markdown file to (blank = AEGIS folder)</label>
+          <input type="text" id="taskOutput" placeholder="C:\Users\you\Documents\Job search">
+        </div>
+        <div class="field">
+          <label class="check"><input type="checkbox" id="taskTrusted">
+            Trusted — approve its tool writes automatically</label>
+          <div class="hint">Off by default: an unattended run declines anything
+            needing approval rather than stalling on a prompt nobody will see.
+            Turn this on only for a task you have watched work.</div>
+        </div>
+        <div class="field">
+          <label class="check"><input type="checkbox" id="taskWindows" checked>
+            Register with Windows so it runs when AEGIS is closed</label>
+        </div>
+        <div class="field"><button class="primary" id="addTask">Create task</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- -------------------------------------------------------- PROVIDERS -->
+  <section class="pane" id="providers">
+    <div class="wrap">
+      <h2>Quick setup — free models in one step</h2>
+      <p class="sub">Paste any keys you have. AEGIS saves each provider, asks what
+        is free today, builds the smart <b>Auto</b> route and makes it your
+        default. Leave the rest blank — you can add more any time.</p>
+      <div class="card section" id="quickSetup"></div>
+
+      <h2>Routes</h2>
+      <p class="sub">An ordered list of models. AEGIS uses the highest healthy one
+        and drops down when a model is out of credit, rate-limited or failing.
+        A free-only route never falls back onto a paid model.</p>
+      <div id="routeList" class="section"></div>
+      <div class="card section">
+        <div class="field">
+          <label>New route</label>
+          <div class="row-inline">
+            <input type="text" id="routeKey" placeholder="key e.g. test" style="max-width:9rem">
+            <input type="text" id="routeLabel" placeholder="Label e.g. Test (free)">
+            <label class="check" style="white-space:nowrap">
+              <input type="checkbox" id="routeFree"> free only</label>
+            <button class="sm primary" id="addRoute">Add</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Or build one from everything free you have</label>
+          <div class="row-inline">
+            <button class="sm" id="autobuildRoute">Rebuild my free Auto route</button>
+            <span class="hint" id="autobuildNote">Asks every provider what is free
+              today and picks a spread from each — the strongest, a coder, one
+              that sees images, a fast one — into the
+              <span class="pill mono">auto</span> route, hosted first and a local
+              engine last. It also refreshes itself daily until you edit it.</span>
+          </div>
+        </div>
+      </div>
+
+      <h2>Allowances</h2>
+      <p class="sub">What a free plan gives you per minute or per day. Fill these
+        in and AEGIS counts down to them and steps to the next model
+        <i>before</i> the provider refuses — rather than discovering the limit
+        with a failed request. Leave them blank to find out the hard way.
+        Providers that report what's left in their response headers are listened
+        to automatically, whether or not you set anything here.</p>
+      <div class="card section">
+        <div class="field">
+          <label>Set an allowance</label>
+          <div class="row-inline">
+            <input type="text" id="budProvider" placeholder="provider e.g. xkiro" style="max-width:10rem">
+            <input type="text" id="budModel" placeholder="model, or * for all" style="max-width:11rem">
+            <input type="number" id="budRpm" placeholder="per min" min="0" style="max-width:6.5rem">
+            <input type="number" id="budRpd" placeholder="per day" min="0" style="max-width:6.5rem">
+            <input type="number" id="budTpd" placeholder="tokens/day" min="0" style="max-width:8rem">
+            <button class="sm primary" id="budSave">Save</button>
+          </div>
+          <div class="hint">Use <span class="pill mono">*</span> as the model to
+            cover a whole provider — which is usually right, because a free
+            plan's cap is on the account, not on each model.</div>
+        </div>
+      </div>
+      <div id="budgetList" class="section"></div>
+
+      <h2>Providers</h2>
+      <p class="sub">Where the tokens come from. Local engines need nothing.
+        API keys are encrypted on this machine. Sign-in uses your browser.</p>
+      <div id="providerList" class="grid2 section"></div>
+
+      <h2>Add an OpenAI-compatible provider</h2>
+      <p class="sub">OpenRouter, Groq, Together, a self-hosted 9Router, a work
+        gateway — anything serving <span class="pill mono">/chat/completions</span>.
+        Pick a preset to fill the URL, or type your own.</p>
+      <div class="card section">
+        <div class="field">
+          <label for="presetPick">Preset</label>
+          <select id="presetPick"></select>
+          <div class="hint" id="presetNote"></div>
+        </div>
+        <div class="field">
+          <label>Short name, label and base URL</label>
+          <div class="row-inline">
+            <input type="text" id="cpKey" placeholder="openrouter" style="max-width:9rem">
+            <input type="text" id="cpLabel" placeholder="OpenRouter" style="max-width:11rem">
+            <input type="text" id="cpUrl" placeholder="https://openrouter.ai/api/v1">
+          </div>
+        </div>
+        <div class="field">
+          <label class="check"><input type="checkbox" id="cpNoModels">
+            This provider has no <span class="pill mono">/models</span> endpoint</label>
+          <div class="hint">Some don't publish one. Then AEGIS can't discover
+            models or prices, so list them yourself below.</div>
+        </div>
+        <div class="field">
+          <label class="check"><input type="checkbox" id="cpFreeTier">
+            My whole plan here is free</label>
+          <div class="hint">For xKiro, 9Router, FreeLLMAPI and an Atria preview
+            key, "free" is an allowance on your account rather than a property
+            of any one model — and their catalogues carry no prices to prove it.
+            Ticking this tells AEGIS you know what your own plan is, so every
+            model here can be used on a free-only route.</div>
+        </div>
+        <div class="field">
+          <label for="cpModels">Model ids (comma separated, case-sensitive)</label>
+          <input type="text" id="cpModels" placeholder="Atria-Dawn-Preview">
+        </div>
+        <div class="field">
+          <label for="cpKeyValue">API key</label>
+          <div class="row-inline">
+            <input type="password" id="cpKeyValue" placeholder="paste the key">
+            <button class="sm primary" id="cpSave">Save provider</button>
+          </div>
+          <div class="hint">Encrypted with your Windows account. Never written to
+            settings.json.</div>
+        </div>
+        <div class="field">
+          <label for="cpExtraKeys">More keys for the same provider (one per line, optional)</label>
+          <textarea id="cpExtraKeys" rows="2" placeholder="Extra free accounts' keys — AEGIS rotates to the next key when one is rate-limited or spent, before switching model"></textarea>
+        </div>
+      </div>
+      <div id="customProviderList" class="section"></div>
+
+      <h2>API keys</h2>
+      <p class="sub">Stored with <b id="vaultBackend">…</b>. These bill per token and
+        are separate from any subscription you pay for.</p>
+      <div id="keyList" class="section"></div>
+
+      <h2>Browser sign-in (OAuth)</h2>
+      <div class="note">
+        <b>About ChatGPT and Claude subscriptions.</b> Neither vendor issues OAuth
+        clients to third-party apps for consumer subscriptions — the sign-in inside
+        Codex CLI and Claude Code belongs to those apps. AEGIS will not impersonate
+        them. To use those subscriptions, install the CLIs, sign in once, and pick
+        the <b>Codex CLI</b> or <b>Claude Code</b> provider in Chat. The flows below
+        are for providers that genuinely support third-party clients — including
+        GPT models through Azure and Claude through Vertex.
+      </div>
+      <div id="oauthList"></div>
+    </div>
+  </section>
+
+  <!-- --------------------------------------------------------- SETTINGS -->
+  <section class="pane" id="settings">
+    <div class="wrap">
+      <h2>Assistant behaviour</h2>
+      <p class="sub">How the Super Agent talks to models and what it may do.</p>
+      <div class="card">
+        <div class="field">
+          <label for="profileSharing">Your profile in prompts</label>
+          <select id="profileSharing">
+            <option value="lite">Short, non-sensitive profile (recommended with free cloud models)</option>
+            <option value="full">Full profile every time (family, health — only if you trust every provider)</option>
+            <option value="none">Nothing about me</option>
+          </select>
+          <div class="hint">Free providers may log prompts. With "short", the
+            full profile is still loaded on demand when a task needs it, and
+            local models always get it.</div>
+        </div>
+        <div class="field">
+          <label for="boostMode">Boost (plan + second-model review)</label>
+          <select id="boostMode">
+            <option value="auto">Auto — code, analysis, CVs, VMware, research</option>
+            <option value="always">Always</option>
+            <option value="off">Off</option>
+          </select>
+          <div class="hint">Costs one or two extra free requests on the tasks it runs for.</div>
+        </div>
+        <div class="field">
+          <label for="maxUpload">Largest file you can attach (GB)</label>
+          <input type="number" id="maxUpload" min="1" max="2000" step="1" style="max-width:8rem">
+          <div class="hint">Files stream straight to disk. Anything over 256 MB is stored and
+            handed to the tools by path instead of being read into a prompt.</div>
+        </div>
+        <div class="field"><label class="check"><input type="checkbox" id="textTools">
+          Give text-only models tools through the text protocol</label></div>
+        <div class="field"><label class="check"><input type="checkbox" id="toolDiet">
+          Tool diet — only offer the tools a request needs (helps small models)</label></div>
+        <div class="field"><label class="check"><input type="checkbox" id="codeTools">
+          Coding tools — run commands and Python (always asks first)</label></div>
+        <div class="field"><label class="check"><input type="checkbox" id="webTools">
+          Web tools — search and read pages</label></div>
+        <div class="field"><label class="check"><input type="checkbox" id="workspaceOn">
+          General workspace — a folder the agent owns, even with nothing connected</label>
+          <div class="hint" id="workspacePath"></div></div>
+        <div class="field">
+          <label for="searxng">Your own SearXNG (optional)</label>
+          <input type="text" id="searxng" placeholder="http://localhost:8888">
+        </div>
+        <div class="field">
+          <label class="check"><input type="checkbox" id="needleOn">
+            Needle fast commands (offline, on the CPU)</label>
+          <div class="hint">Short messages like "open youtube", "boost off" or "switch to
+            the job hunt project" run as AEGIS commands in milliseconds without asking a
+            model. Anything that isn't clearly a command goes to the model as usual.
+            <span id="needleStatus" class="mono"></span></div>
+          <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin-top:.35rem">
+            <label for="needleConf" style="margin:0">Act only above confidence</label>
+            <input type="number" id="needleConf" min="0.3" max="0.95" step="0.05" style="max-width:6rem">
+            <button class="sm ghost" id="needleWarm">Prepare Needle</button>
+          </div>
+        </div>
+        <div class="field"><button class="primary" id="saveBehaviour">Save</button></div>
+      </div>
+
+      <h2>Fit calculator</h2>
+      <p class="sub">These change every verdict on the Models tab.</p>
+      <div class="card">
+        <div class="field">
+          <label for="fitContext">Context length used for the estimate</label>
+          <select id="fitContext">
+            <option value="2048">2,048</option>
+            <option value="4096">4,096</option>
+            <option value="8192">8,192</option>
+            <option value="16384">16,384</option>
+            <option value="32768">32,768</option>
+            <option value="131072">131,072</option>
+          </select>
+          <div class="hint">The KV cache grows linearly with this. Doubling the
+            context can turn a green model amber.</div>
+        </div>
+        <div class="field">
+          <label for="ramHeadroom">RAM to leave for the rest of Windows (MB)</label>
+          <input type="number" id="ramHeadroom" min="512" max="16384" step="256">
+        </div>
+        <div class="field">
+          <label for="bandwidth">Assumed memory bandwidth (GB/s)</label>
+          <input type="number" id="bandwidth" min="5" max="2000" step="5">
+          <div class="hint">Only used for the throughput ceiling, which is a
+            physics bound, not a promise. DDR4 dual channel is around 45.</div>
+        </div>
+        <div class="field">
+          <button class="primary" id="saveSettings">Save</button>
+        </div>
+      </div>
+
+      <h2>This machine</h2>
+      <div class="card" id="hwDetail"></div>
+
+      <h2>llama.cpp runner</h2>
+      <div class="card" id="runnerBox"></div>
+
+      <h2>Storage</h2>
+      <div class="card">
+        <div class="card-sub">Downloaded GGUF files live in
+          <span class="pill mono" id="modelsDir"></span></div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script src="/static/md.js"></script>
+<script src="/static/app.js"></script>
+<script src="/static/v2.js"></script>
+<script src="/static/v21.js"></script>
+<script src="/static/needle.js"></script>
+<script src="/static/welcome.js"></script>
+</body>
+</html>
