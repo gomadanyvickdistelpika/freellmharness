@@ -584,7 +584,9 @@ async def _code_and_web() -> None:
     check("with nothing connected the agent still has its own workspace",
           "files__write" in names and "files__edit" in names, str(names))
 
-    out = await code.run_command(command="echo hello-aegis && pwd")
+    # `;` works in bash, Windows PowerShell 5.1 and pwsh alike (`&&` does not
+    # work in 5.1 - found by the Windows CI run).
+    out = await code.run_command(command="echo hello-aegis; pwd")
     check("code__run runs in the general workspace",
           "hello-aegis" in out["text"] and str(projects.general_workspace()) in out["text"],
           out["text"][:200])
