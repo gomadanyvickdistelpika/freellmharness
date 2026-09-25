@@ -1,0 +1,25 @@
+name: Idea or improvement
+description: Suggest a feature, a better default, or a new skill/agent
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      placeholder: "When my free Gemini key runs out mid-answer, I..."
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Your idea
+    validations:
+      required: true
+  - type: dropdown
+    id: help
+    attributes:
+      label: Would you like to build it?
+      options:
+        - "Yes, I'd like to open a pull request"
+        - "Maybe, with some guidance"
+        - "No, just suggesting"
