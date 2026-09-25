@@ -1,5 +1,7 @@
 # freellmharness — AEGIS, a free AI assistant for your Windows PC
 
+[![tests](https://github.com/gomadanyvickdistelpika/freellmharness/actions/workflows/tests.yml/badge.svg)](https://github.com/gomadanyvickdistelpika/freellmharness/actions/workflows/tests.yml) [![MIT licence](https://img.shields.io/badge/licence-MIT-blue.svg)](LICENSE) [![good first issues](https://img.shields.io/github/issues/gomadanyvickdistelpika/freellmharness/good%20first%20issue?label=good%20first%20issues)](https://github.com/gomadanyvickdistelpika/freellmharness/labels/good%20first%20issue)
+
 AEGIS is one window on your PC that talks to **free** AI models (and paid ones if you
 want). It has chat, voice, image and song making, a built-in browser, file uploads,
 coding help, scheduled tasks and ready-made "agents" like a Coder, a Job Hunter and a
@@ -168,6 +170,16 @@ your **Me** notes. See [`aegis/skills_bundled/PACK.md`](aegis/skills_bundled/PAC
 | Anything else | Look at `aegis-setup.log` in the folder and send it with your feedback |
 
 ---
+
+## Help build it
+
+AEGIS is open source and looking for testers and contributors — no expertise needed.
+
+- 🐞 **Found a bug?** [Open a bug report](https://github.com/gomadanyvickdistelpika/freellmharness/issues/new/choose)
+- 💡 **Have an idea?** Start a [Discussion](https://github.com/gomadanyvickdistelpika/freellmharness/discussions) or use the *Idea or improvement* template
+- 🛠 **Want to code?** Pick a [`good first issue`](https://github.com/gomadanyvickdistelpika/freellmharness/labels/good%20first%20issue) and read [CONTRIBUTING.md](CONTRIBUTING.md)
+- 🗺 See what's planned and what's rough in the [ROADMAP](ROADMAP.md)
+- 🔒 Security problem? Please report it privately — see [SECURITY.md](SECURITY.md)
 
 ## Giving feedback
 
